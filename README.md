@@ -2,7 +2,6 @@
 
 ![Image flow][img01]
 
-
 ## Download ISO image
 
 ```bash
@@ -214,4 +213,4 @@ az image create \
 
 - [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd)
 
-[img01]: img/im01.png
+[img01]: raw/master/img/img01.png
