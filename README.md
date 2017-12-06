@@ -35,19 +35,19 @@ Convert-VHD –Path "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx
 ### Variables we need
 
 ```bash
-managementSubscriptionId=724467b5-bee4-484b-bf13-d6a5505d2b51
-demoPrefix=hecdemo
-managementResourceGroup="${demoPrefix}management"
-imageIngestDataCenter=westeurope
-imageIngestStorageAccountName="${demoPrefix}imageingest"
-imageIngestStorageContainerName="imagedistribution"
-imageLocalFile="output-hyperv-iso/Virtual Hard Disks/packer-hyperv-iso.vhd"
-imageBlobName="2017-12-06-opensuse-image.vhd"
+export managementSubscriptionId="724467b5-bee4-484b-bf13-d6a5505d2b51"
+export demoPrefix="hecdemo"
+export managementResourceGroup="${demoPrefix}management"
+export imageIngestDataCenter="westeurope"
+export imageIngestStorageAccountName="${demoPrefix}imageingest"
+export imageIngestStorageContainerName="imagedistribution"
+export imageLocalFile="output-hyperv-iso/Virtual Hard Disks/packer-hyperv-iso.vhd"
+export imageBlobName="2017-12-06-opensuse-image.vhd"
 
-productionSubscriptionId=706df49f-998b-40ec-aed3-7f0ce9c67759
-productionDataCenter=northeurope
-productionImageResourceGroup="${demoPrefix}productionmanagement"
-productionImageIngestStorageAccountName="${demoPrefix}prodimages"
+export productionSubscriptionId="706df49f-998b-40ec-aed3-7f0ce9c67759"
+export productionDataCenter="northeurope"
+export productionImageResourceGroup="${demoPrefix}productionmanagement"
+export productionImageIngestStorageAccountName="${demoPrefix}prodimages"
 ```
 
 ### Select the management subscription
@@ -80,7 +80,7 @@ az storage account create \
 ### Fetch storage account key
 
 ```bash
-imageIngestStorageAccountKey=$(az storage account keys list \
+export imageIngestStorageAccountKey=$(az storage account keys list \
   --resource-group "${managementResourceGroup}" \
   --account-name "${imageIngestStorageAccountName}" \
   --query "[?contains(keyName,'key1')].[value]" \
@@ -139,7 +139,7 @@ az storage account create \
 ### Fetch storage account key for the production storage account
 
 ```bash
-productionImageIngestStorageAccountKey=$(az storage account keys list \
+export productionImageIngestStorageAccountKey=$(az storage account keys list \
   --resource-group "${productionImageResourceGroup}" \
   --account-name "${productionImageIngestStorageAccountName}" \
   --query "[?contains(keyName,'key1')].[value]" \
@@ -154,6 +154,54 @@ az storage container create \
   --account-key  "${productionImageIngestStorageAccountKey}" \
   --name         "${imageIngestStorageContainerName}" \
   --public-access off
+```
+
+### Trigger the copy operation
+
+- [`az storage blob copy start`](https://docs.microsoft.com/en-us/cli/azure/storage/blob/copy?view=azure-cli-latest#az_storage_blob_copy_start)
+
+```bash
+az storage blob copy start \
+  --source-account-name   "${imageIngestStorageAccountName}" \
+  --source-account-key    "${imageIngestStorageAccountKey}" \
+  --source-container      "${imageIngestStorageContainerName}" \
+  --source-blob           "${imageBlobName}" \
+  --account-name          "${productionImageIngestStorageAccountName}" \
+  --account-key           "${productionImageIngestStorageAccountKey}" \
+  --destination-container "${imageIngestStorageContainerName}" \
+  --destination-blob      "${imageBlobName}"
+```
+
+### Track the copy status
+
+```bash
+statusJson=$(az storage blob show \
+  --account-name "${productionImageIngestStorageAccountName}" \
+  --account-key "${productionImageIngestStorageAccountKey}" \
+  --container-name "${imageIngestStorageContainerName}" \
+  --name "${imageBlobName}")
+
+echo $statusJson | jq ".properties.copy.status"
+echo $statusJson | jq ".properties.copy.progress"
+```
+
+### Create a managed image in the production subscription
+
+```bash
+productionImageIngestUrl=$(az storage blob url \
+  --protocol "https" \
+  --account-name "${productionImageIngestStorageAccountName}" \
+  --account-key "${productionImageIngestStorageAccountKey}" \
+  --container-name "${imageIngestStorageContainerName}" \
+  --name "${imageBlobName}" \
+  --o tsv)
+
+az image create \
+  --name "${imageBlobName}" \
+  --resource-group "${productionImageResourceGroup}" \
+  --location "${productionDataCenter}" \
+  --source "${productionImageIngestUrl}" \
+  --os-type Linux
 ```
 
 ## links
