@@ -19,7 +19,10 @@ go get github.com/mitchellh/packer
 ### Use packer, to install and build openSUSE in a local Hyper-V installation
 
 ```cmd
+REM turn on packer logging
 set PACKER_LOG=1
+
+REM run packer against local Hyper-V
 packer build packer-hyper-v.json
 ```
 
@@ -46,7 +49,7 @@ export imageBlobName="2017-12-06-opensuse-image.vhd"
 
 export productionSubscriptionId="706df49f-998b-40ec-aed3-7f0ce9c67759"
 export productionDataCenter="northeurope"
-export productionImageResourceGroup="${demoPrefix}productionmanagement"
+export productionImageResourceGroup="${demoPrefix}production"
 export productionImageIngestStorageAccountName="${demoPrefix}prodimages"
 ```
 
@@ -133,7 +136,7 @@ az storage account create \
   --location "${productionDataCenter}" \
   --https-only true \
   --kind Storage \
-  --sku Standard_LRS
+  --sku Premium_LRS
 ```
 
 ### Fetch storage account key for the production storage account
