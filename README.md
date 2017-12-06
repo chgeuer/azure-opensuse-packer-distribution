@@ -1,6 +1,7 @@
 # Distribute images
 
-![Image flow][img01]
+![Image flow](img/img01.png?raw=true "Image flow")
+
 
 ## Download ISO image
 
@@ -213,4 +214,3 @@ az image create \
 
 - [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd)
 
-[img01]: raw/master/img/img01.png
