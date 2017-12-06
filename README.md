@@ -32,7 +32,7 @@ packer build packer-hyper-v.json
 Convert-VHD –Path "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx" -DestinationPath "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhd" -VHDType Fixed
 ```
 
-### Create target ingest storage account
+### Variables we need
 
 ```bash
 managementSubscriptionId=724467b5-bee4-484b-bf13-d6a5505d2b51
@@ -44,9 +44,13 @@ imageIngestStorageContainerName="imagedistribution"
 imageLocalFile="output-hyperv-iso/Virtual Hard Disks/packer-hyperv-iso.vhd"
 imageBlobName="2017-12-06-opensuse-image.vhd"
 
+productionSubscriptionId=706df49f-998b-40ec-aed3-7f0ce9c67759
+productionDataCenter=northeurope
+productionImageResourceGroup="${demoPrefix}productionmanagement"
+productionImageIngestStorageAccountName="${demoPrefix}prodimages"
 ```
 
-### Create target ingest storage account
+### Select the management subscription
 
 ```bash
 az account set \
@@ -65,7 +69,7 @@ az group create \
 
 ```bash
 az storage account create \
-  --name "${demoPrefix}imageingest" \
+  --name "${imageIngestStorageAccountName}" \
   --resource-group "${managementResourceGroup}" \
   --location "${imageIngestDataCenter}" \
   --https-only true \
@@ -103,6 +107,53 @@ az storage blob upload \
   --container-name "${imageIngestStorageContainerName}" \
   --file "${imageLocalFile}" \
   --name "${imageBlobName}"
+```
+
+### Select the production subscription
+
+```bash
+az account set \
+  --subscription $productionSubscriptionId
+```
+
+### Create the production image resource group
+
+```bash
+az group create \
+  --name "${productionImageResourceGroup}" \
+  --location "${productionDataCenter}"
+```
+
+### Create the production image storage account where images are copied to
+
+```bash
+az storage account create \
+  --name "${productionImageIngestStorageAccountName}" \
+  --resource-group "${productionImageResourceGroup}" \
+  --location "${productionDataCenter}" \
+  --https-only true \
+  --kind Storage \
+  --sku Standard_LRS
+```
+
+### Fetch storage account key for the production storage account
+
+```bash
+productionImageIngestStorageAccountKey=$(az storage account keys list \
+  --resource-group "${productionImageResourceGroup}" \
+  --account-name "${productionImageIngestStorageAccountName}" \
+  --query "[?contains(keyName,'key1')].[value]" \
+  --o tsv)
+```
+
+### Create the storage container where images are copied to
+
+```bash
+az storage container create \
+  --account-name "${productionImageIngestStorageAccountName}" \
+  --account-key  "${productionImageIngestStorageAccountKey}" \
+  --name         "${imageIngestStorageContainerName}" \
+  --public-access off
 ```
 
 ## links
