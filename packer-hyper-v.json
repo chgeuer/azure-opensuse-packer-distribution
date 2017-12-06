@@ -1,0 +1,45 @@
+{
+  "variables": {
+    "openSuseVersion": "42.3",
+    "openSuseChecksum": "195baca6c5f3b7f3ad4d7984a7f7bd5c4a37be2eb67e58b65d07ac3a2b599e83"
+  },
+  "builders": [
+    {
+      "type": "hyperv-iso",
+      "generation": 1,
+      "enable_secure_boot": false,
+      "enable_virtualization_extensions": false,
+      "enable_dynamic_memory": false,
+      "cpu": 1,
+      "ram_size": 2048,
+      "disk_size": 4096,
+      
+      "iso_url": "openSUSE-Leap-{{user `openSuseVersion`}}-DVD-x86_64.iso",
+      "iso_checksum": "{{user `openSuseChecksum`}}",
+      "iso_checksum_type": "sha256",
+
+      "http_directory": "http",
+      "boot_wait": "00m10s",
+      "boot_command": [
+        "<esc><enter><wait>",
+        "linux",
+        " textmode=1",
+        " lang=en_US",
+        " netdevice=eth0",
+        " netsetup=dhcp",
+        " autoyast=http://{{ .HTTPIP }}:{{ .HTTPPort }}/autoinst.xml",
+        "<enter><wait5>"
+      ],
+
+      "communicator": "ssh",
+      "ssh_timeout": "30m00s",
+      "ssh_username": "packer",
+      "ssh_password": "packer",
+
+      "shutdown_command": "echo 'packer' | sudo -S shutdown -P now",
+      "skip_compaction": true
+    }
+  ],
+  "provisioners": [
+  ]
+}
