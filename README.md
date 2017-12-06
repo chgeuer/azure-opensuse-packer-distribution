@@ -44,20 +44,26 @@ imageIngestStorageContainerName="imagedistribution"
 imageLocalFile="output-hyperv-iso/Virtual Hard Disks/packer-hyperv-iso.vhd"
 imageBlobName="2017-12-06-opensuse-image.vhd"
 
+```
 
+### Create target ingest storage account
+
+```bash
 az account set \
   --subscription $managementSubscriptionId
+```
 
-#
-# Create the management resource group
-#
+### Create the management resource group
+
+```bash
 az group create \
   --name "${managementResourceGroup}" \
   --location "${imageIngestDataCenter}"
+```
 
-#
-# Create the storage account where images are uploaded to
-#
+### Create the storage account where images are uploaded to
+
+```bash
 az storage account create \
   --name "${demoPrefix}imageingest" \
   --resource-group "${managementResourceGroup}" \
@@ -65,28 +71,31 @@ az storage account create \
   --https-only true \
   --kind Storage \
   --sku Standard_RAGRS
+```
 
-#
-# Fetch storage account key
-#
+### Fetch storage account key
+
+```bash
 imageIngestStorageAccountKey=$(az storage account keys list \
   --resource-group "${managementResourceGroup}" \
   --account-name "${imageIngestStorageAccountName}" \
   --query "[?contains(keyName,'key1')].[value]" \
   --o tsv)
+```
 
-#
-# Create the storage container where images are uploaded
-#
+### Create the storage container where images are uploaded
+
+```bash
 az storage container create \
   --account-name "${imageIngestStorageAccountName}" \
   --account-key  "${imageIngestStorageAccountKey}" \
   --name         "${imageIngestStorageContainerName}" \
   --public-access off
+```
 
-#
-# Upload the image to the distribution point
-#
+### Upload the image to the distribution point
+
+```bash
 az storage blob upload \
   --type page \
   --account-name   "${imageIngestStorageAccountName}" \
