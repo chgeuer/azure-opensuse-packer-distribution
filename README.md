@@ -32,7 +32,7 @@ go get github.com/mitchellh/packer
 
 ### Use packer, to install and build openSUSE in a local Hyper-V installation
 
-TODO: Right now, the image is not yet fully prepared according to [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd).
+TODO: Right now, the image is not yet fully prepared according to [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd). Some initial steps are executed in [scripts/setup_azure.sh](scripts/setup_azure.sh?raw=true)
 
 ```cmd
 REM turn on packer logging
@@ -40,26 +40,6 @@ set PACKER_LOG=1
 
 REM run packer against local Hyper-V
 packer build packer-hyper-v.json
-```
-
-
-#### Christian's experiments to script locally
-
-```bash
-openSUSEversion=$(cat /etc/os-release | grep -Po '^VERSION="\K[^"]*')
-zypper addrepo "http://download.opensuse.org/distribution/leap/${openSUSEversion}/repo/oss/" online
-zypper update --no-confirm
-
-zypper install --no-confirm WALinuxAgent
-chkconfig waagent on
-service waagent start
-
-sed -i 's/^DHCLIENT_SET_HOSTNAME=".*"$/DHCLIENT_SET_HOSTNAME="no"/' /etc/sysconfig/network/dhcp
-sed -i 's/^DHCLIENT6_SET_HOSTNAME=".*"$/DHCLIENT6_SET_HOSTNAME="no"/' /etc/sysconfig/network/dhcp
-
-# Got grub2 config from https://docs.microsoft.com/en-us/azure/virtual-machines/linux/redhat-create-upload-vhd
-sed -i 's/^GRUB_CMDLINE_LINUX=""$/GRUB_CMDLINE_LINUX="rootdelay=300 console=ttyS0 earlyprintk=ttyS0 net.ifnames=0"/' /etc/default/grub
-grub2-mkconfig -o /boot/grub2/grub.cfg
 ```
 
 - The installation is configured through the `http/autoinst.xml` file. The file stucture is defined in [AutoYaST documentation](https://doc.opensuse.org/projects/autoyast/).
