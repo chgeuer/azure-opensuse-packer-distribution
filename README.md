@@ -10,7 +10,27 @@ The walktrough describes how to distribute locally (on-prem) created VM images t
 - All other commands can be executed on Windows, Windows Subsystem for Linux, Linux or MacOS X, as long as the `az` command line utility is installed.
   - All the variable escaping, string interpolation, etc. below nevertheless is assumed to be executed in a `bash` shell.
 
+## Overall architecture
+
+1. Upload the image to a main storage account in a management subscription
+1. Copy the image to the desired data center and subscription. For example, if customer 1 needs the image in datacenter A and B, and customer 2 needs the image in datacenter A, there would be three transfers out of the management storage. 
+
 ![Image flow](img/img01.png?raw=true "Image flow")
+
+## Alternative distribution
+
+If there are many datacenters and customers, an alternative approach would be to distribute the image within the management subscription into management storage accounts in each datacenter, and then 'locally' copy it over to all customers. 
+
+### Advantages
+
+- faster provisioning times for new customers (because the images are already in the right datacenter)
+- Only pay once egress per image/datacenter location, instead of per image/datacenter/customer.
+
+### Disadvantage
+
+- Higher complexity in infrastructure and copy scripts
+
+![Image flow 2](img/img02.png?raw=true "Image flow 2")
 
 ## Build a VHD locally
 
