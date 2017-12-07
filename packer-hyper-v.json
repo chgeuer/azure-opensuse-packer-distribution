@@ -44,7 +44,10 @@
     {
       "type": "shell",
       "scripts": [
-        "scripts/setup_azure.sh"
+        "scripts/00_update_opensuse.sh",
+        "scripts/01_setup_waagent.sh",
+        "scripts/02_networking.sh",
+        "scripts/03_grub2.sh"
       ],
       "execute_command": "echo 'packer' | sudo -S sh '{{.Path}}'"
     }
