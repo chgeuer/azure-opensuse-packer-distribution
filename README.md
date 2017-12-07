@@ -11,7 +11,7 @@ The walktrough describes how to distribute locally (on-prem) created VM images t
 
 ![Image flow](img/img01.png?raw=true "Image flow")
 
-## CBuild a VHD locally
+## Build a VHD locally
 
 In order to have a VHD I can distribute, I used packer on Hyper-V:
 
@@ -90,12 +90,12 @@ az group create \
 
 ```bash
 az storage account create \
-  --name "${imageIngestStorageAccountName}" \
+  --name           "${imageIngestStorageAccountName}" \
   --resource-group "${managementResourceGroup}" \
-  --location "${imageIngestDataCenter}" \
-  --https-only true \
-  --kind Storage \
-  --sku Standard_RAGRS
+  --location       "${imageIngestDataCenter}" \
+  --https-only     true \
+  --kind           Storage \
+  --sku            Standard_RAGRS
 ```
 
 ### Fetch storage account key
@@ -103,9 +103,9 @@ az storage account create \
 ```bash
 export imageIngestStorageAccountKey=$(az storage account keys list \
   --resource-group "${managementResourceGroup}" \
-  --account-name "${imageIngestStorageAccountName}" \
-  --query "[?contains(keyName,'key1')].[value]" \
-  --o tsv)
+  --account-name   "${imageIngestStorageAccountName}" \
+  --query          "[?contains(keyName,'key1')].[value]" \
+  --o              tsv)
 ```
 
 ### Create the storage container where images are uploaded
@@ -122,12 +122,12 @@ az storage container create \
 
 ```bash
 az storage blob upload \
-  --type page \
+  --type           page \
   --account-name   "${imageIngestStorageAccountName}" \
   --account-key    "${imageIngestStorageAccountKey}" \
   --container-name "${imageIngestStorageContainerName}" \
-  --file "${imageLocalFile}" \
-  --name "${imageBlobName}"
+  --file           "${imageLocalFile}" \
+  --name           "${imageBlobName}"
 ```
 
 ### Select the production subscription
@@ -149,12 +149,12 @@ az group create \
 
 ```bash
 az storage account create \
-  --name "${productionImageIngestStorageAccountName}" \
+  --name           "${productionImageIngestStorageAccountName}" \
   --resource-group "${productionImageResourceGroup}" \
-  --location "${productionDataCenter}" \
-  --https-only true \
-  --kind Storage \
-  --sku Premium_LRS
+  --location       "${productionDataCenter}" \
+  --https-only     true \
+  --kind           Storage \
+  --sku            Premium_LRS
 ```
 
 ### Fetch storage account key for the production storage account
@@ -162,8 +162,8 @@ az storage account create \
 ```bash
 export productionImageIngestStorageAccountKey=$(az storage account keys list \
   --resource-group "${productionImageResourceGroup}" \
-  --account-name "${productionImageIngestStorageAccountName}" \
-  --query "[?contains(keyName,'key1')].[value]" \
+  --account-name   "${productionImageIngestStorageAccountName}" \
+  --query          "[?contains(keyName,'key1')].[value]" \
   --o tsv)
 ```
 
@@ -197,10 +197,10 @@ az storage blob copy start \
 
 ```bash
 statusJson=$(az storage blob show \
-  --account-name "${productionImageIngestStorageAccountName}" \
-  --account-key "${productionImageIngestStorageAccountKey}" \
+  --account-name   "${productionImageIngestStorageAccountName}" \
+  --account-key    "${productionImageIngestStorageAccountKey}" \
   --container-name "${imageIngestStorageContainerName}" \
-  --name "${imageBlobName}")
+  --name           "${imageBlobName}")
 
 echo $statusJson | jq ".properties.copy.status"
 echo $statusJson | jq ".properties.copy.progress"
@@ -211,21 +211,20 @@ echo $statusJson | jq ".properties.copy.progress"
 ```bash
 productionImageIngestUrl=$(az storage blob url \
   --protocol "https" \
-  --account-name "${productionImageIngestStorageAccountName}" \
-  --account-key "${productionImageIngestStorageAccountKey}" \
+  --account-name   "${productionImageIngestStorageAccountName}" \
+  --account-key    "${productionImageIngestStorageAccountKey}" \
   --container-name "${imageIngestStorageContainerName}" \
-  --name "${imageBlobName}" \
+  --name           "${imageBlobName}" \
   --o tsv)
 
 az image create \
-  --name "${imageBlobName}" \
+  --name           "${imageBlobName}" \
   --resource-group "${productionImageResourceGroup}" \
-  --location "${productionDataCenter}" \
-  --source "${productionImageIngestUrl}" \
-  --os-type Linux
+  --location       "${productionDataCenter}" \
+  --source         "${productionImageIngestUrl}" \
+  --os-type        Linux
 ```
 
 ## links
 
 - [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd)
-
