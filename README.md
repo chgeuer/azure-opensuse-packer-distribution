@@ -1,17 +1,27 @@
 # Distribute images
 
+The walktrough describes how to distribute locally (on-prem) created VM images to one or more Azure subscriptions and data centers.
+
+- The production VMs will use 'managed disks', therefore we need 'managed images' in the target subscriptions and data centers.
+- For this sample, I locally create VM images (VHD files) using Hashicorp packer against Hyper-V. The local OS to be installed is openSUSE.
+- Some scripts below are designed to be executed on a Windows host, particularly
+  - Running `packer build` against Hyper-V
+  - Running the `Convert-VHD` Commandlet, to convert the dynamic-size `.vhdx` file in a static-size `.vhd` file.
+- All other commands can be executed on Windows, Windows Subsystem for Linux, Linux or MacOS X, as long as the `az` command line utility is installed.
+
 ![Image flow](img/img01.png?raw=true "Image flow")
 
+## CBuild a VHD locally
 
-## Download ISO image
+In order to have a VHD I can distribute, I used packer on Hyper-V:
+
+### Download ISO image
 
 ```bash
 export openSuseVersion=42.3
 export imageLocation="https://download.opensuse.org/distribution/leap/${openSuseVersion}/iso/openSUSE-Leap-${openSuseVersion}-DVD-x86_64.iso"
 curl --get --location --output "openSUSE-Leap-${openSuseVersion}-DVD-x86_64.iso" --url $imageLocation
 ```
-
-## Build a vhdx file
 
 ### install packer, if needed
 
@@ -30,13 +40,18 @@ packer build packer-hyper-v.json
 ```
 
 - The installation is configured through the `http/autoinst.xml` file. The file stucture is defined in [AutoYaST documentation](https://doc.opensuse.org/projects/autoyast/).
-- The `packer build` run creates a `.vhdx` file in `output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx`. 
+- The `packer build` run creates a `.vhdx` file in `output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx`.
 
 ### Convert `.vhdx` to fixed-size `.vhd`
 
 ```powershell
-Convert-VHD –Path "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx" -DestinationPath "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhd" -VHDType Fixed
+Convert-VHD `
+  –Path "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx" `
+  -DestinationPath "output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhd" `
+  -VHDType Fixed
 ```
+
+## Upload and distribute the existing VHD from our build server to Azure
 
 ### Variables we need
 
