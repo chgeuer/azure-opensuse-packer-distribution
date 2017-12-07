@@ -32,6 +32,8 @@ go get github.com/mitchellh/packer
 
 ### Use packer, to install and build openSUSE in a local Hyper-V installation
 
+TODO: Right now, the image is not yet fully prepared according to [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd).
+
 ```cmd
 REM turn on packer logging
 set PACKER_LOG=1
@@ -194,7 +196,9 @@ az storage blob copy start \
   --destination-blob      "${imageBlobName}"
 ```
 
-### Track the copy status
+### Track the copy operation's status
+
+Once the destination storage account received the call to start the copy operation, it pulls the data from the source storage account. Calling [`az storage blob show`](https://docs.microsoft.com/en-us/cli/azure/storage/blob?view=azure-cli-latest#az_storage_blob_show) retrieves the destination blob's properties, amongst which you find the `copy.status` and `copy.status` values. A `"status":"pending"` let's you know it's still not finished. A `"progress": "3370123264/4294967808"` tells you how many bytes of which total have already been transferred.
 
 ```bash
 statusJson=$(az storage blob show \
@@ -209,8 +213,10 @@ echo $statusJson | jq ".properties.copy.progress"
 
 ### Create a managed image in the production subscription
 
+Before creating an image, wait until the full copy operation finished successfully.
+
 ```bash
-productionImageIngestUrl=$(az storage blob url \
+export productionImageIngestUrl=$(az storage blob url \
   --protocol "https" \
   --account-name   "${productionImageIngestStorageAccountName}" \
   --account-key    "${productionImageIngestStorageAccountKey}" \
@@ -225,7 +231,3 @@ az image create \
   --source         "${productionImageIngestUrl}" \
   --os-type        Linux
 ```
-
-## links
-
-- [Azure: Prepare a SLES or openSUSE virtual machine for Azure](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/suse-create-upload-vhd)
