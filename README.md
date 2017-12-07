@@ -42,6 +42,26 @@ REM run packer against local Hyper-V
 packer build packer-hyper-v.json
 ```
 
+
+#### Christian's experiments to script locally
+
+```bash
+openSUSEversion=$(cat /etc/os-release | grep -Po '^VERSION="\K[^"]*')
+zypper addrepo "http://download.opensuse.org/distribution/leap/${openSUSEversion}/repo/oss/" online
+zypper update --no-confirm
+
+zypper install --no-confirm WALinuxAgent
+chkconfig waagent on
+service waagent start
+
+sed -i 's/^DHCLIENT_SET_HOSTNAME=".*"$/DHCLIENT_SET_HOSTNAME="no"/' /etc/sysconfig/network/dhcp
+sed -i 's/^DHCLIENT6_SET_HOSTNAME=".*"$/DHCLIENT6_SET_HOSTNAME="no"/' /etc/sysconfig/network/dhcp
+
+# Got grub2 config from https://docs.microsoft.com/en-us/azure/virtual-machines/linux/redhat-create-upload-vhd
+sed -i 's/^GRUB_CMDLINE_LINUX=""$/GRUB_CMDLINE_LINUX="rootdelay=300 console=ttyS0 earlyprintk=ttyS0 net.ifnames=0"/' /etc/default/grub
+grub2-mkconfig -o /boot/grub2/grub.cfg
+```
+
 - The installation is configured through the `http/autoinst.xml` file. The file stucture is defined in [AutoYaST documentation](https://doc.opensuse.org/projects/autoyast/).
 - The `packer build` run creates a `.vhdx` file in `output-hyperv-iso\Virtual Hard Disks\packer-hyperv-iso.vhdx`.
 

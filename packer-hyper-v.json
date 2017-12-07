@@ -41,5 +41,12 @@
     }
   ],
   "provisioners": [
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/setup_azure.sh"
+      ],
+      "execute_command": "echo 'packer' | sudo -S sh '{{.Path}}'"
+    }
   ]
 }
