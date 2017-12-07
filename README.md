@@ -8,6 +8,7 @@ The walktrough describes how to distribute locally (on-prem) created VM images t
   - Running `packer build` against Hyper-V
   - Running the `Convert-VHD` Commandlet, to convert the dynamic-size `.vhdx` file in a static-size `.vhd` file.
 - All other commands can be executed on Windows, Windows Subsystem for Linux, Linux or MacOS X, as long as the `az` command line utility is installed.
+  - All the variable escaping, string interpolation, etc. below nevertheless is assumed to be executed in a `bash` shell.
 
 ![Image flow](img/img01.png?raw=true "Image flow")
 
