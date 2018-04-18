@@ -10,27 +10,25 @@
 # }  
 
 subscription="chgeuer-work"
-resourceGroup="copy"
-SourceAccountName="copydiskssource"
-SourceContainer="vhds"
-SourceBlob="basevm20180416183515.vhd"
+resourceGroup="longterm"
+SourceAccountName="sapbodsrepro"
+SourceContainer="cont1"
+SourceBlob="foo.vhd"
 targetContainerName="ima"
 
 az account set \
     --subscription "${subscription}"
 
+#
+# Define all target DCs here
+#
 declare -A StorageAccountNames=( 
-   ["northeurope"]="copynortheeurope" 
-   ["southeastasia"]="copysoutheastasia" 
-   ["eastus2"]="copyeastus2" 
+   ["northeurope"]="chgeuerdub" 
 )
 
 declare -A RegionTag=( 
-   ["northeurope"]="datacenter1" 
-   ["southeastasia"]="datacenter2" 
-   ["eastus2"]="datacenter3" 
+   ["northeurope"]="dublin" 
 )
-
 
 #
 # Fetch storage account keys
@@ -62,8 +60,9 @@ do
         --account-name "${StorageAccountNames[$regionname]}" \
         --account-key  "${StorageAccountKeys[$regionname]}" \
         --name         "${targetContainerName}" \
-        --public-access off | \
-        jq -r ".created")
+        --public-access off \
+        --o             tsv \
+        --query "created" )
  
     if [ "true" == $created ]; then
         echo "Created container ${StorageAccountNames[$regionname]}/${targetContainerName} in region ${regionname}"
@@ -86,8 +85,9 @@ do
         --account-name          "${StorageAccountNames[$regionname]}" \
         --account-key           "${StorageAccountKeys[$regionname]}" \
         --destination-container "${targetContainerName}" \
-        --destination-blob      "${SourceBlob}" | \
-            jq -r ".id")
+        --destination-blob      "${SourceBlob}" \
+        --output                "tsv" \
+        --query                 "id")
 
     CopyOperationIDs[$regionname]="${copyOperationId}"
 done
@@ -95,14 +95,13 @@ done
 while [ ${#CopyOperationIDs[@]} -gt 0 ]; do
     for regionname in ${!CopyOperationIDs[@]} 
     do 
-        statusJson=$(az storage blob show \
+        status=$(az storage blob show \
             --account-name   "${StorageAccountNames[$regionname]}" \
             --account-key    "${StorageAccountKeys[$regionname]}" \
             --container-name "${targetContainerName}" \
-            --name           "${SourceBlob}")
-        
-        status=$(echo $statusJson | jq -r ".properties.copy.status")
-        progress=$(echo $statusJson | jq -r ".properties.copy.progress")
+            --name           "${SourceBlob}" \
+            --output         tsv \
+            --query          "properties.copy.[status]" ) # "properties.copy.[status, progress]" )
 
         dest="${StorageAccountNames[$regionname]}/${targetContainerName}/${SourceBlob}"
         if [ "success" == $status ]; then
@@ -110,7 +109,15 @@ while [ ${#CopyOperationIDs[@]} -gt 0 ]; do
             unset CopyOperationIDs[$regionname]
         else
             # echo "Still working on ${dest}, $(progress_to_percent "${progress}")%"
-            echo "Still working on ${dest}: ${progress}"
+            progress=$(az storage blob show \
+                --account-name   "${StorageAccountNames[$regionname]}" \
+                --account-key    "${StorageAccountKeys[$regionname]}" \
+                --container-name "${targetContainerName}" \
+                --name           "${SourceBlob}" \
+                --output         tsv \
+                --query          "properties.copy.progress" ) 
+
+            echo "Still working on ${dest} (${progress})"
         fi
     done
 done
@@ -132,11 +139,15 @@ do
     
     echo "Creating image ${imagename} in ${regionname}, tagging it with datacenterID=${regionTag}. VHD is ${vhdUrl}"
 
-    az image create \
+    provisioningState=$(az image create \
         --name           "${imagename}" \
         --resource-group "${resourceGroup}" \
         --location       "${regionname}" \
         --source         "${vhdUrl}" \
         --os-type        Linux \
-        --tags           "datacenterID=${regionTag}"
+        --tags           "datacenterID=${regionTag}" \
+        --o              tsv \
+        --query          "provisioningState" ) 
+    
+    echo "Result of image creation ${imagename} : ${provisioningState}"
 done
