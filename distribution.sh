@@ -42,7 +42,7 @@ SourceAccountKey=$(az storage account keys list \
 declare -A StorageAccountKeys
 for regionname in ${!StorageAccountNames[@]} 
 do 
-   key=$(az storage account keys list \
+   local key=$(az storage account keys list \
        --resource-group "${resourceGroup}" \
        --account-name   "${StorageAccountNames[$regionname]}" \
        --query          "[?contains(keyName,'key1')].[value]" \
@@ -56,7 +56,7 @@ done
 #
 for regionname in ${!StorageAccountNames[@]} 
 do 
-    created=$(az storage container create \
+    local created=$(az storage container create \
         --account-name "${StorageAccountNames[$regionname]}" \
         --account-key  "${StorageAccountKeys[$regionname]}" \
         --name         "${targetContainerName}" \
@@ -64,7 +64,7 @@ do
         --o             tsv \
         --query "created" )
  
-    if [ "true" == $created ]; then
+    if [[ "true" == $created ]]; then
         echo "Created container ${StorageAccountNames[$regionname]}/${targetContainerName} in region ${regionname}"
     else
         echo "Container ${StorageAccountNames[$regionname]}/${targetContainerName} already existed in region ${regionname}"
@@ -77,7 +77,7 @@ done
 declare -A CopyOperationIDs
 for regionname in ${!StorageAccountNames[@]} 
 do 
-    copyOperationId=$(az storage blob copy start \
+    local copyOperationId=$(az storage blob copy start \
         --source-account-name   "${SourceAccountName}" \
         --source-account-key    "${SourceAccountKey}" \
         --source-container      "${SourceContainer}" \
@@ -92,10 +92,10 @@ do
     CopyOperationIDs[$regionname]="${copyOperationId}"
 done
 
-while [ ${#CopyOperationIDs[@]} -gt 0 ]; do
+while [[ ${#CopyOperationIDs[@]} -gt 0 ]]; do
     for regionname in ${!CopyOperationIDs[@]} 
     do 
-        status=$(az storage blob show \
+        local status=$(az storage blob show \
             --account-name   "${StorageAccountNames[$regionname]}" \
             --account-key    "${StorageAccountKeys[$regionname]}" \
             --container-name "${targetContainerName}" \
@@ -104,7 +104,7 @@ while [ ${#CopyOperationIDs[@]} -gt 0 ]; do
             --query          "properties.copy.[status]" ) # "properties.copy.[status, progress]" )
 
         dest="${StorageAccountNames[$regionname]}/${targetContainerName}/${SourceBlob}"
-        if [ "success" == $status ]; then
+        if [[ "success" == $status ]]; then
             echo "Finished ${dest}, removing from list"
             unset CopyOperationIDs[$regionname]
         else
@@ -126,7 +126,7 @@ echo "Finished all copy operations, copied the VHD to ${#StorageAccountNames[@]}
 
 for regionname in ${!StorageAccountNames[@]} 
 do 
-    vhdUrl=$(az storage blob url \
+    local vhdUrl=$(az storage blob url \
         --protocol "https" \
         --account-name   "${StorageAccountNames[$regionname]}" \
         --account-key    "${StorageAccountKeys[$regionname]}" \
@@ -134,12 +134,12 @@ do
         --name           "${SourceBlob}" \
         --o tsv)
 
-    imagename="${regionname}-${SourceBlob}"
-    regionTag="${RegionTag[$regionname]}"
+    local imagename="${regionname}-${SourceBlob}"
+    local regionTag="${RegionTag[$regionname]}"
     
     echo "Creating image ${imagename} in ${regionname}, tagging it with datacenterID=${regionTag}. VHD is ${vhdUrl}"
 
-    provisioningState=$(az image create \
+    local provisioningState=$(az image create \
         --name           "${imagename}" \
         --resource-group "${resourceGroup}" \
         --location       "${regionname}" \
